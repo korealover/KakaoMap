@@ -38,7 +38,7 @@ function handleSubmit() {
 
         // 결과 표시
         resultContainer.innerHTML = `
-            <p>Average Star: ${averageStar}</p>
+            <p>${averageStar}</p>
           `;
 
         const posSumContainer=document.getElementById("pos-sum");
