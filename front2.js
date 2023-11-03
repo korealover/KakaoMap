@@ -9,7 +9,6 @@ function handleSubmit() {
     const url = urlInput.value;
     console.log(url);
     //  alert('입력된 값: ' + url);
-    // 원하는 동작을 수행하거나 서버로 데이터를 제출할 수 있습니다.
 
     const resultContainer = document.getElementById("average-rating");
     
