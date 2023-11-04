@@ -9,6 +9,7 @@ from fastapi import FastAPI
 from transformers import pipeline
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from webdriver_manager.chrome import ChromeDriverManager
 
 app = FastAPI()
 sentiment_model = pipeline(model="WhitePeak/bert-base-cased-Korean-sentiment")
@@ -186,6 +187,7 @@ def scrape_and_get_reviews(data: InputData):
     sum_review.append(sum_model(positive_sum))
     sum_review.append(sum_model(negative_sum))
     average_star=data["average_relative_score"]
+    print("review : ",sum_review)
     # sum_review = [sum_model(positive_sum), sum_model(negative_sum)]
     return sum_review, average_star
 
