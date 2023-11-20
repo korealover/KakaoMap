@@ -12,10 +12,13 @@ from fastapi.middleware.cors import CORSMiddleware
 print("Server loading...")
 app = FastAPI()
 # CORS 설정
+# CORS 미들웨어 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 모든 출처 허용, 보안을 위해 필요에 따라 수정
-    allow_methods=["*"],  # 모든 HTTP 메서드 허용, 보안을 위해 필요에 따라 수정
+    allow_origins=["*"],  # 이 부분을 필요에 따라 수정하세요. "*"는 모든 origin을 허용합니다.
+    allow_credentials=True,
+    allow_methods=["*"],  # 필요한 HTTP 메서드를 지정하세요.
+    allow_headers=["*"],  # 필요한 헤더를 지정하세요.
 )
 print("Server loaded")
 
@@ -200,6 +203,9 @@ def scrape_and_get_reviews(data: InputData):
     con = []
     res_name = data["restaurant_name"]
 
+    pos_num=0;
+    neg_num=0;
+
     # 공백인 리뷰 제거
     for review in data["review_data"][res_name]:
         if review["review_content"] != "":
@@ -212,7 +218,9 @@ def scrape_and_get_reviews(data: InputData):
         # print(review)
         if sentiment_model(review)[0]["label"] == "LABEL_1":  # 긍정
             pos_con.append(review)
+            pos_num+=1
         elif sentiment_model(review)[0]["label"] == "LABEL_0":  # 부정
+            neg_num+=1
             neg_con.append(review)
     print("감정 분류 완료")
 
@@ -233,7 +241,7 @@ def scrape_and_get_reviews(data: InputData):
     print("소요 시간 : ", end_time - start_time)
     average_star=data["average_relative_score"]
 
-    return sum_review, average_star
+    return sum_review, average_star, pos_num, neg_num
 
 
 if __name__ == "__main__":
