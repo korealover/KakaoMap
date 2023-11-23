@@ -3,14 +3,20 @@ import time
 import re
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from transformers import pipeline
 from helium import *
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+
 
 print("Server loading...")
 app = FastAPI()
+templates = Jinja2Templates(directory="templates")
+app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/assets", StaticFiles(directory="assets"), name="assets")
 # CORS 설정
 # CORS 미들웨어 설정
 app.add_middleware(
@@ -187,12 +193,14 @@ def save_review_to_json(
 
     restaurant_data[restaurant_name].append(review_dict)
 
+
 class InputData(BaseModel):
     url: str
 
-@app.post("/")
-def scrape_and_get_reviews(data: InputData):
-    url=data.url
+
+@app.post("/result")
+async def scrape_and_get_reviews(data: InputData):
+    url = data.url
     start_time = time.time()
     print("fetch_reviews start")
     data = fetch_reviews(url)
@@ -203,8 +211,8 @@ def scrape_and_get_reviews(data: InputData):
     con = []
     res_name = data["restaurant_name"]
 
-    pos_num=0;
-    neg_num=0;
+    pos_num = 0
+    neg_num = 0
 
     # 공백인 리뷰 제거
     for review in data["review_data"][res_name]:
@@ -212,7 +220,7 @@ def scrape_and_get_reviews(data: InputData):
             con.append(review["review_content"])
 
     # 긍정 부정 리뷰 분류
-    print("감정 분류 시작")
+    print("감정 분류 시작 : ", time.time() - start_time)
     for review in con:
         # print(sentiment_model(review)[0]["label"])
         # print(review)
@@ -222,7 +230,7 @@ def scrape_and_get_reviews(data: InputData):
         elif sentiment_model(review)[0]["label"] == "LABEL_0":  # 부정
             neg_num+=1
             neg_con.append(review)
-    print("감정 분류 완료")
+    print("감정 분류 완료 : ", time.time() - start_time)
 
     positive_sum = ""
     for review in pos_con:
@@ -232,16 +240,21 @@ def scrape_and_get_reviews(data: InputData):
         negative_sum += review + "\n"
 
     sum_review = []
-    print("리뷰 요약 시작")
+    print("리뷰 요약 시작 : ", time.time() - start_time)
     sum_review.append(sum_model(positive_sum, max_length=100, min_length=5))
     sum_review.append(sum_model(negative_sum, max_length=100, min_length=5))
     sum_review.append(data["average_relative_score"])
-    print("리뷰 요약 완료")
+    print("리뷰 요약 완료: ", time.time() - start_time)
     end_time = time.time()
     print("소요 시간 : ", end_time - start_time)
     average_star=data["average_relative_score"]
 
     return sum_review, average_star, pos_num, neg_num
+
+
+@app.get('/')
+async def main(request: Request):
+    return templates.TemplateResponse('main.html', {'request': request})
 
 
 if __name__ == "__main__":
